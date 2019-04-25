@@ -63,26 +63,23 @@ def convert(filename):
 def lol(f_name):
     df = pd.read_csv(f_name, dtype=COLUMN_TO_TYPE, encoding='utf-8')
     all_bodies = df['body'].values
+
     all_cont = df['controversiality'].values
-    with open("anacigin", "w") as anan:
-        with open("anneannen", "w") as labels:
+    with open("anacigin.txt", "w") as anan:
+        with open("anneannen.txt", "w") as labels:
             i = 0
             a = False
-            for body in all_bodies:
-                if not isinstance(body,str):
-                    a = True
+            for body, cont in zip(all_bodies, all_cont):           
+                try:
+                    comment = body.replace("\n"," ")
+                    comment = comment.replace("\r"," ")
+                    anan.write(comment+"\n")
+                    label = cont
+                    if label == 0:
+                        label = -1
+                    labels.write(str(label)+"\n")
+
+                except:
                     continue
-                comment = body.replace("\n"," ")
-                comment = comment.replace("\r"," ")
-                anan.write(comment+"\n")
-                i+=1
-            
-            for cont in all_cont:
-                if a:
-                    a = False
-                    continue
-                label = cont
-                if label == 0:
-                    label = -1
-                labels.write(str(label)+"\n")
+                
         
