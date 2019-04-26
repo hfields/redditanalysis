@@ -8,6 +8,8 @@ from nltk import word_tokenize
 from nltk.corpus import stopwords
 from os import listdir
 from os.path import isfile, join, splitext
+from sklearn.feature_extraction.text import TfidfVectorizer
+from scipy.sparse import csr_matrix
 
 COLUMN_TO_TYPE = {'created_utc':np.int64,
                   'ups': np.int64,
@@ -141,11 +143,32 @@ def word_hist(word_counts, subreddit):
     add_value_labels(ax)
     plt.show()
 
+def find_max_TFIDF_words(documents):
+    """ Returns a list of words in the documents sorted by average tfidf scores."""
+
+    vectorizer = TfidfVectorizer()
+    response = vectorizer.fit_transform(documents)
+
+    dictionary = vectorizer.get_feature_names()
+    averages = response.mean(axis = 0)
+
+    return np.take(dictionary, np.argsort(averages))
+
+
 def main():
     # json_dir_to_csv('./reddit_data/2015/RC_2015-05/')
     # subreddit_csv('politics', './reddit_data/2015/RC_2015-05/')
-    data = word_counts('./politics.csv')
-    word_hist(data, 'politics')
+    # data = word_counts('./politics.csv')
+    # word_hist(data, 'politics')
+
+    # read the comments and their labels, without unit tests
+    comments = []
+    f = open("anacigin.txt")
+    
+    for line in f:
+        comments += [line]
+
+    print(list(find_max_TFIDF_words(comments)[0][:10]))
 
 if __name__ == "__main__" :
     main()
