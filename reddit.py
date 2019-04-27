@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 # scikit-learn libraries
 from sklearn.dummy import DummyClassifier
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold
 from sklearn import metrics
 from sklearn.utils import shuffle
@@ -469,8 +470,9 @@ def performance_CI(clf, X, y, metric="accuracy") :
 
     # part 5c: use bootstrapping to compute 95% confidence interval
     # hint: use np.random.randint(...) to sample
-    t = 1000
-    n = len(X)
+    tval = 100
+    t = tval
+    n = X.shape[0]
     bootstrap_scores = []
 
     # Bootstrap t times
@@ -485,7 +487,7 @@ def performance_CI(clf, X, y, metric="accuracy") :
 
         t -= 1
 
-    t = 1000
+    t = tval
     bootstrap_scores.sort()
 
     # Return tuple with score and 2.5th and 97.5th percentiles of bootstrap scores
@@ -615,8 +617,9 @@ def main() :
     np.random.seed(1234)
 
     # split the data into training (training + cross-validation) and testing set
-    X_train, X_test = X[:1000], X[1000:]
-    y_train, y_test = y[:1000], y[1000:]
+    test_size = 1000
+    X_train, X_test = X[:test_size], X[test_size:]
+    y_train, y_test = y[:test_size], y[test_size:]
 
     # part 2a: metrics, with unit test
     # (nothing to implement, just make sure the test passes)
@@ -646,29 +649,35 @@ def main() :
     clf_linear = SVC(C=0.1, kernel='linear', class_weight = 'balanced')
     clf_linear.fit(X_train, y_train)
 
-    clf_rbf = SVC(C=0.1, gamma=0.01, kernel='rbf')
+    clf_rbf = SVC(C=0.1, gamma=0.01, kernel='rbf',class_weight = 'balanced')
     clf_rbf.fit(X_train, y_train)
+
+    clf_rfc = RandomForestClassifier(max_depth = 100, class_weight = 'balanced')
+    clf_rfc.fit(X_train,y_train)
 
     # part 5b: report performance on train data
     #          use plot_results(...) to make plot
-    classifiers = ["linear", "rbf"]
+    classifiers = ["linear", "rbf", "rfc"]
 
     # Predict y vals for all classifiers
     y_pred_baseline = baseline.predict(X_train)
     y_pred_linear = clf_linear.predict(X_train)
     y_pred_rbf = clf_rbf.predict(X_train)
+    y_pred_rfc = clf_rfc.predict(X_train)
 
     # Keep a list of results for each metric
     results_baseline = []
     results_linear = []
     results_rbf = []
+    results_rfc = []
 
     for metric in metrics:
         results_baseline += [(performance(y_train, y_pred_baseline, metric),)]
         results_linear += [(performance(y_train, y_pred_linear, metric),)]
         results_rbf += [(performance(y_train, y_pred_rbf, metric),)]
+        results_rfc += [(performance(y_train, y_pred_rfc, metric),)]
 
-    plot_results(metrics, classifiers, results_baseline, results_linear, results_rbf)
+    plot_results(metrics, classifiers, results_baseline, results_linear, results_rbf, results_rfc)
 
     # part 5d: use bootstrapping to report performance on test data
     #          use plot_results(...) to make plot
@@ -677,17 +686,19 @@ def main() :
     CIs_baseline = []
     CIs_linear = []
     CIs_rbf = []
+    CIs_rfc = []
 
     for metric in metrics:
         CIs_baseline += [(performance_CI(baseline, X_test, y_test, metric))]
         CIs_linear += [(performance_CI(clf_linear, X_test, y_test, metric))]
         CIs_rbf += [(performance_CI(clf_rbf, X_test, y_test, metric))]
+        CIs_rfc += [(performance_CI(clf_rfc, X_test, y_test, metric))]
 
-    plot_results(metrics, classifiers, CIs_baseline, CIs_linear,CIs_rbf)
+    plot_results(metrics, classifiers, CIs_baseline, CIs_linear,CIs_rbf, CIs_rfc)
 
     ### ========== TODO : START ========== ###
     # part 6: identify important features
-    #invDict = dict((v, k) for k, v in dictionary.items())
+    #invDict = dict((v, k) for k, v in dictionary.items())s
 
     #features = []
 
