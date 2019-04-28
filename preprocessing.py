@@ -65,6 +65,28 @@ def subreddit_csv(subreddit, dir):
     new_csv = "%s.csv" % (subreddit)
     subreddit_df.to_csv(path_or_buf=new_csv, sep=',', encoding='utf-8')
 
+def preprocess_csv(f_name):
+    df = pd.read_csv(f_name, dtype=COLUMN_TO_TYPE)
+    df = df.dropna(subset=['body'])
+    all_bodies = df['body'].copy()
+
+    def preprocess_row(row):
+        row = row.lower()
+        row = re.sub(r'http\S+', ' LINK ', row)
+        row = re.sub(r'\d+', '', row)
+        for char in string.punctuation:
+            row = row.replace(char, '')
+        row = row.replace('\n', '')
+        row = row.replace('\r', '')
+        return row
+
+    all_bodies = all_bodies.apply(preprocess_row)
+
+    df['body'] = all_bodies
+    df = df.dropna(subset=['body'])
+    new_csv = '%s_filt.csv' % (splitext(f_name)[0])
+    df.to_csv(path_or_buf=new_csv, sep=',', encoding='utf-8')
+
 def word_counts(f_name):
     stop_words=set(stopwords.words("english"))
 
@@ -164,7 +186,7 @@ def main():
     # read the comments and their labels, without unit tests
     comments = []
     f = open("anacigin.txt")
-    
+
     for line in f:
         comments += [line]
 
