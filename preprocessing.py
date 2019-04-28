@@ -190,7 +190,9 @@ def main():
     for line in f:
         comments += [line]
 
-    print(list(find_max_TFIDF_words(comments)[0][:10]))
+    words = find_max_TFIDF_words(comments)[0]
+    
+
 
 if __name__ == "__main__" :
     main()

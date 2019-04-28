@@ -24,7 +24,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold
 from sklearn import metrics
 from sklearn.utils import shuffle
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer, TfidfTransformer
+from sklearn.model_selection import train_test_split
+from sklearn.svm import LinearSVC
 
 ######################################################################
 # functions -- input/output
@@ -354,13 +356,16 @@ def select_param_linear(X, y, kf, metrics=["accuracy"], plot=True) :
     """
 
     C_range = 10.0 ** np.arange(-3, 3)
+
     scores = np.empty((len(metrics), len(C_range)))
     best_params = np.empty(len(metrics))
 
     # part 3b: for each metric, select optimal hyperparameter using cross-validation
     for i in range(len(C_range)):
         c = C_range[i]
-        clf = SVC(C=c,kernel='linear')
+        #clf = SVC(C=c,kernel='linear')
+        clf = LinearSVC(loss='hinge',class_weight='balanced',C=c)
+
         # compute CV scores using cv_performance(...)
         sc = cv_performance(clf,X,y,kf,metrics=metrics)
 
@@ -470,7 +475,7 @@ def performance_CI(clf, X, y, metric="accuracy") :
 
     # part 5c: use bootstrapping to compute 95% confidence interval
     # hint: use np.random.randint(...) to sample
-    tval = 1
+    tval = 100
     if tval == 1:
         return score, score, score
     t = tval
@@ -486,7 +491,6 @@ def performance_CI(clf, X, y, metric="accuracy") :
 
         # Find performance metric with this bootstrap attempt
         bootstrap_scores += [performance(y_boot, y_pred_boot, metric)]
-
         t -= 1
 
     t = tval
@@ -591,6 +595,16 @@ def plot_results(metrics, classifiers, *args):
 
     plt.show()
 
+def find_max_TFIDF_words(documents):
+    """ Returns a list of words in the documents sorted by average tfidf scores."""
+
+    vectorizer = TfidfVectorizer()
+    response = vectorizer.fit_transform(documents)
+
+    dictionary = vectorizer.get_feature_names()
+    averages = response.mean(axis = 0)
+
+    return np.take(dictionary, np.argsort(averages))
 
 ######################################################################
 # main
@@ -604,24 +618,28 @@ def main() :
     for line in f:
         comments += [line]
 
-    vectorizer = TfidfVectorizer()
-    response = vectorizer.fit_transform(comments)
+    features = list(find_max_TFIDF_words(comments)[0])
 
-    dictionary = vectorizer.get_feature_names()
+    countvectorizer = CountVectorizer(stop_words = features[1000:])
+    counts = countvectorizer.fit_transform(comments)
+    
+    transformer = TfidfTransformer()
+    X = transformer.fit_transform(counts)
 
-    X = response
+    dictionary = countvectorizer.get_feature_names()
     y = read_vector_file('anneannen.txt')
 
     # shuffle data (since file has comments ordered by bernie)
-    X, y = shuffle(X, y, random_state=0)
+    X, y = shuffle(X, y)
 
     # set random seed
-    np.random.seed(1234)
+    #np.random.seed(1234)
 
     # split the data into training (training + cross-validation) and testing set
-    test_size = 50000
-    X_train, X_test = X[:test_size], X[test_size:]
-    y_train, y_test = y[:test_size], y[test_size:]
+    #train_size = 1000
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    #X_train, X_test = X[:train_size], X[train_size:]
+    #y_train, y_test = y[:train_size], y[train_size:]
 
     # part 2a: metrics, with unit test
     # (nothing to implement, just make sure the test passes)
@@ -631,55 +649,57 @@ def main() :
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=np.random.randint(1234))
 
     # hyperparameter selection for linear-SVM
-    # c = 1 is the best for everything except sensitivity
-    best_params = select_param_linear(X_train, y_train, skf, metrics)
-
-    # hyperparameter selection using RBF-SVM
-    # c = 100 and gamma = 0.01 is best for everything except sensitivity
-    #best_params_rbf = select_param_rbf(X_train, y_train, skf, metrics)
-
-    print(best_params)
-    #print(best_params_rbf)
+    #best_params = select_param_linear(X_train, y_train, skf, metrics)
+    #print(best_params)
 
     # part 5a: train linear- and RBF-SVMs with selected hyperparameters
     # hint: use only linear-SVM (comment out the RBF-SVM) for debugging
 
-    # Create and train baseline, linear, and rbf classifiers
+    # Create and train baseline, linear, rfc, and fast classifiers
     baseline = DummyClassifier()
     baseline.fit(X_train, y_train)
+    print('a')
 
-    clf_linear = SVC(C=0.1, kernel='linear', class_weight = 'balanced')
+    #clf_linear = SVC(C=0.1, kernel='linear', class_weight = 'balanced')
+    clf_linear = DummyClassifier()
     clf_linear.fit(X_train, y_train)
-
-    clf_rbf = SVC(C=0.1, gamma=0.01, kernel='rbf',class_weight = 'balanced')
-    clf_rbf.fit(X_train, y_train)
+    print('b')
 
     clf_rfc = RandomForestClassifier(max_depth = 100, class_weight = 'balanced')
+    #clf_rfc = DummyClassifier()
     clf_rfc.fit(X_train,y_train)
+    print('c')
+
+    clf_fast = LinearSVC(loss='hinge',class_weight='balanced',C=0.01)
+    clf_fast.fit(X_train,y_train)
+    print('d')
 
     # part 5b: report performance on train data
     #          use plot_results(...) to make plot
-    classifiers = ["linear", "rbf", "rfc"]
+    classifiers = ["linear", "rfc", 'fast']
 
     # Predict y vals for all classifiers
     y_pred_baseline = baseline.predict(X_train)
     y_pred_linear = clf_linear.predict(X_train)
-    y_pred_rbf = clf_rbf.predict(X_train)
+    #y_pred_rbf = clf_rbf.predict(X_train)
     y_pred_rfc = clf_rfc.predict(X_train)
+    y_pred_fast = clf_fast.predict(X_train)
 
     # Keep a list of results for each metric
     results_baseline = []
     results_linear = []
-    results_rbf = []
+    #results_rbf = []
     results_rfc = []
+    results_fast = []
 
     for metric in metrics:
         results_baseline += [(performance(y_train, y_pred_baseline, metric),)]
         results_linear += [(performance(y_train, y_pred_linear, metric),)]
-        results_rbf += [(performance(y_train, y_pred_rbf, metric),)]
+        #results_rbf += [(performance(y_train, y_pred_rbf, metric),)]
         results_rfc += [(performance(y_train, y_pred_rfc, metric),)]
+        results_fast += [(performance(y_train, y_pred_fast, metric),)]
 
-    plot_results(metrics, classifiers, results_baseline, results_linear, results_rbf, results_rfc)
+    plot_results(metrics, classifiers, results_baseline, results_linear, results_rfc,results_fast)
 
     # part 5d: use bootstrapping to report performance on test data
     #          use plot_results(...) to make plot
@@ -687,41 +707,28 @@ def main() :
     # Keep a list of confidence intervals for each metric
     CIs_baseline = []
     CIs_linear = []
-    CIs_rbf = []
+    #CIs_rbf = []
     CIs_rfc = []
+    CIs_fast = []
 
     for metric in metrics:
+        print(metric)
         CIs_baseline += [(performance_CI(baseline, X_test, y_test, metric))]
         CIs_linear += [(performance_CI(clf_linear, X_test, y_test, metric))]
-        CIs_rbf += [(performance_CI(clf_rbf, X_test, y_test, metric))]
         CIs_rfc += [(performance_CI(clf_rfc, X_test, y_test, metric))]
+        CIs_fast += [(performance_CI(clf_fast, X_test, y_test, metric))]
 
-    plot_results(metrics, classifiers, CIs_baseline, CIs_linear,CIs_rbf, CIs_rfc)
+    plot_results(metrics, classifiers, CIs_baseline, CIs_linear, CIs_rfc, CIs_fast)
 
-    ### ========== TODO : START ========== ###
     # part 6: identify important features
-    #invDict = dict((v, k) for k, v in dictionary.items())s
 
-    #features = []
+    features = []
 
-    #for index in np.argsort(clf_linear.coef_)[0]:
-    #    features += [invDict[index]]
+    for index in np.argsort(clf_fast.coef_)[0]:
+        features += [dictionary[index]]
 
-    #print(features[0:10])
-    #print(features[-11:])
-
-    ### ========== TODO : END ========== ###
-
-    ### ========== TODO : START ========== ###
-    # Twitter contest
-    # uncomment out the following, and be sure to change the filename
-    """
-    X_held = extract_feature_vectors('../data/held_out_tweets.txt', dictionary)
-    # your code here
-    # y_pred = best_clf.decision_function(X_held)
-    write_label_answer(y_pred, '../data/yjw_twitter.txt')
-    """
-    ### ========== TODO : END ========== ###
+    print(features[0:10])
+    print(features[-11:])
 
 
 if __name__ == "__main__" :

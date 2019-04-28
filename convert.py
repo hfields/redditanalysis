@@ -56,7 +56,8 @@ def convert(f_name):
                     continue
 
 #it's like the function above but for pussies
-def pussyconvert(f_name):
+#cutoff is the number of comments you want to keep
+def pussyconvert(f_name, cutoff):
     df = pd.read_csv(f_name, dtype=COLUMN_TO_TYPE, encoding='utf-8')
     all_bodies = df['body'].values
 
@@ -65,7 +66,7 @@ def pussyconvert(f_name):
         with open("anneannen.txt", "w") as labels:
             i = 0
             for body, cont in zip(all_bodies, all_cont):    
-                if i > 15000:
+                if i > cutoff:
                     break       
                 try:
                     comment = body.replace("\n"," ")
