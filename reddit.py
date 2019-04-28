@@ -470,7 +470,9 @@ def performance_CI(clf, X, y, metric="accuracy") :
 
     # part 5c: use bootstrapping to compute 95% confidence interval
     # hint: use np.random.randint(...) to sample
-    tval = 100
+    tval = 1
+    if tval == 1:
+        return score, score, score
     t = tval
     n = X.shape[0]
     bootstrap_scores = []
@@ -617,7 +619,7 @@ def main() :
     np.random.seed(1234)
 
     # split the data into training (training + cross-validation) and testing set
-    test_size = 1000
+    test_size = 50000
     X_train, X_test = X[:test_size], X[test_size:]
     y_train, y_test = y[:test_size], y[test_size:]
 
