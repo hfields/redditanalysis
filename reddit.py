@@ -26,6 +26,7 @@ from sklearn import metrics
 from sklearn.utils import shuffle
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
+from sklearn.svm import LinearSVC
 
 ######################################################################
 # functions -- input/output
@@ -471,7 +472,7 @@ def performance_CI(clf, X, y, metric="accuracy") :
 
     # part 5c: use bootstrapping to compute 95% confidence interval
     # hint: use np.random.randint(...) to sample
-    tval = 1
+    tval = 100
     if tval == 1:
         return score, score, score
     t = tval
@@ -614,10 +615,10 @@ def main() :
     y = read_vector_file('anneannen.txt')
 
     # shuffle data (since file has comments ordered by bernie)
-    X, y = shuffle(X, y, random_state=0)
+    X, y = shuffle(X, y)
 
     # set random seed
-    np.random.seed(1234)
+    #np.random.seed(1234)
 
     # split the data into training (training + cross-validation) and testing set
     #train_size = 1000
@@ -651,40 +652,49 @@ def main() :
     baseline.fit(X_train, y_train)
     print('a')
 
-    clf_linear = SVC(C=0.1, kernel='linear', class_weight = 'balanced')
+    #clf_linear = SVC(C=0.1, kernel='linear', class_weight = 'balanced')
+    clf_linear = DummyClassifier()
     clf_linear.fit(X_train, y_train)
     print('b')
 
     #clf_rbf = SVC(C=0.1, gamma=0.01, kernel='rbf',class_weight = 'balanced')
     #clf_rbf.fit(X_train, y_train)
 
-    clf_rfc = RandomForestClassifier(max_depth = None, class_weight = 'balanced')
+    #clf_rfc = RandomForestClassifier(max_depth = 100, class_weight = 'balanced')
+    clf_rfc = DummyClassifier()
     clf_rfc.fit(X_train,y_train)
     print('c')
 
+    clf_fast = LinearSVC(loss='hinge',class_weight='balanced',C=0.1)
+    clf_fast.fit(X_train,y_train)
+    print('d')
+
     # part 5b: report performance on train data
     #          use plot_results(...) to make plot
-    classifiers = ["linear", "rfc"]
+    classifiers = ["linear", "rfc", 'fast']
 
     # Predict y vals for all classifiers
     y_pred_baseline = baseline.predict(X_train)
     y_pred_linear = clf_linear.predict(X_train)
     #y_pred_rbf = clf_rbf.predict(X_train)
     y_pred_rfc = clf_rfc.predict(X_train)
+    y_pred_fast = clf_fast.predict(X_train)
 
     # Keep a list of results for each metric
     results_baseline = []
     results_linear = []
     #results_rbf = []
     results_rfc = []
+    results_fast = []
 
     for metric in metrics:
         results_baseline += [(performance(y_train, y_pred_baseline, metric),)]
         results_linear += [(performance(y_train, y_pred_linear, metric),)]
         #results_rbf += [(performance(y_train, y_pred_rbf, metric),)]
         results_rfc += [(performance(y_train, y_pred_rfc, metric),)]
+        results_fast += [(performance(y_train, y_pred_fast, metric),)]
 
-    plot_results(metrics, classifiers, results_baseline, results_linear, results_rfc)
+    plot_results(metrics, classifiers, results_baseline, results_linear, results_rfc,results_fast)
 
     # part 5d: use bootstrapping to report performance on test data
     #          use plot_results(...) to make plot
@@ -694,26 +704,28 @@ def main() :
     CIs_linear = []
     #CIs_rbf = []
     CIs_rfc = []
+    CIs_fast = []
 
     for metric in metrics:
         CIs_baseline += [(performance_CI(baseline, X_test, y_test, metric))]
         CIs_linear += [(performance_CI(clf_linear, X_test, y_test, metric))]
         #CIs_rbf += [(performance_CI(clf_rbf, X_test, y_test, metric))]
         CIs_rfc += [(performance_CI(clf_rfc, X_test, y_test, metric))]
+        CIs_fast += [(performance_CI(clf_fast, X_test, y_test, metric))]
 
-    plot_results(metrics, classifiers, CIs_baseline, CIs_linear, CIs_rfc)
+    plot_results(metrics, classifiers, CIs_baseline, CIs_linear, CIs_rfc, CIs_fast)
 
     ### ========== TODO : START ========== ###
     # part 6: identify important features
     #invDict = dict((v, k) for k, v in dictionary.items())s
 
-    #features = []
+    features = []
 
-    #for index in np.argsort(clf_linear.coef_)[0]:
-    #    features += [invDict[index]]
+    for index in np.argsort(clf_fast.coef_)[0]:
+        features += [dictionary[index]]
 
-    #print(features[0:10])
-    #print(features[-11:])
+    print(features[0:10])
+    print(features[-11:])
 
     ### ========== TODO : END ========== ###
 
