@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 import string
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,16 +16,11 @@ COLUMN_TO_TYPE = {'created_utc':np.int64,
                   'ups': np.int64,
                   'subreddit_id': str,
                   'link_id': str,
-                  'name': str,
-                  'score_hidden': bool,
                   'author_flair_css_class': str,
                   'author_flair_text': str,
                   'subreddit': str,
                   'id': str,
-                  'removal_reason': str,
                   'gilded': np.int64,
-                  'downs': np.int64,
-                  'archived': bool,
                   'author': str,
                   'score': np.int64,
                   'retrieved_on': np.int64,
@@ -34,6 +30,7 @@ COLUMN_TO_TYPE = {'created_utc':np.int64,
                   'controversiality': np.int8,
                   'parent_id': str,
                   }
+
 
 def json_to_csv(f_name):
     data = []
@@ -48,10 +45,12 @@ def json_to_csv(f_name):
          cw.writeheader()
          cw.writerows(data)
 
+
 def json_dir_to_csv(dir):
     files = [f for f in listdir(dir) if splitext(f)[1] == ".json"]
     for file in files:
         json_to_csv(join(dir, file))
+
 
 def subreddit_csv(subreddit, dir):
     subreddit_df = pd.DataFrame()
@@ -65,7 +64,8 @@ def subreddit_csv(subreddit, dir):
     new_csv = "%s.csv" % (subreddit)
     subreddit_df.to_csv(path_or_buf=new_csv, sep=',', encoding='utf-8')
 
-def preprocess_csv(f_name):
+
+def preprocess_csv(f_name, cols=COLUMN_TO_TYPE.keys()):
     df = pd.read_csv(f_name, dtype=COLUMN_TO_TYPE)
     df = df.dropna(subset=['body'])
     all_bodies = df['body'].copy()
@@ -84,8 +84,23 @@ def preprocess_csv(f_name):
 
     df['body'] = all_bodies
     df = df.dropna(subset=['body'])
+    df = df[cols]
     new_csv = '%s_filt.csv' % (splitext(f_name)[0])
     df.to_csv(path_or_buf=new_csv, sep=',', encoding='utf-8')
+
+
+def single_csv(dir, cols=COLUMN_TO_TYPE.keys()):
+    full_df = pd.DataFrame()
+    files = [join(dir, f) for f in listdir(dir) if splitext(f)[1] == ".csv"]
+    for file in files:
+        df = pd.read_csv(file, dtype=COLUMN_TO_TYPE)
+        if full_df.empty:
+            full_df.rename(columns=df.columns)
+        full_df = full_df.append(df, sort=True)
+    full_df = full_df[cols]
+    new_csv = join(dir, "dataset.csv")
+    full_df.to_csv(path_or_buf=new_csv, sep=',', encoding='utf-8')
+
 
 def word_counts(f_name):
     stop_words=set(stopwords.words("english"))
@@ -106,6 +121,7 @@ def word_counts(f_name):
                 else:
                     word_counts[word] += 1
     return word_counts
+
 
 def word_hist(word_counts, subreddit):
     word_counts = word_counts.items()
@@ -165,6 +181,7 @@ def word_hist(word_counts, subreddit):
     add_value_labels(ax)
     plt.show()
 
+
 def find_max_TFIDF_words(documents):
     """ Returns a list of words in the documents sorted by average tfidf scores."""
 
@@ -178,17 +195,19 @@ def find_max_TFIDF_words(documents):
 
 
 def main():
-    # json_dir_to_csv('./reddit_data/2015/RC_2015-05/')
-    # subreddit_csv('politics', './reddit_data/2015/RC_2015-05/')
+    # json_dir_to_csv('../reddit_data/2016/RC_2016-12/')
+    # subreddit_csv('politics', '../reddit_data/2016/RC_2016-12/')
     # data = word_counts('./politics.csv')
     # word_hist(data, 'politics')
 
     # read the comments and their labels, without unit tests
-    comments = []
-    f = open("anacigin.txt")
-
-    for line in f:
-        comments += [line]
+    # comments = []
+    # f = open("anacigin.txt")
+    #
+    # for line in f:
+    #     comments += [line]
+    #
+    # words = find_max_TFIDF_words(comments)[0]
 
     words = find_max_TFIDF_words(comments)[0]
 
