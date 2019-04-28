@@ -25,6 +25,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn import metrics
 from sklearn.utils import shuffle
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
 
 ######################################################################
 # functions -- input/output
@@ -619,9 +620,10 @@ def main() :
     np.random.seed(1234)
 
     # split the data into training (training + cross-validation) and testing set
-    test_size = 50000
-    X_train, X_test = X[:test_size], X[test_size:]
-    y_train, y_test = y[:test_size], y[test_size:]
+    #train_size = 1000
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    #X_train, X_test = X[:train_size], X[train_size:]
+    #y_train, y_test = y[:train_size], y[train_size:]
 
     # part 2a: metrics, with unit test
     # (nothing to implement, just make sure the test passes)
@@ -632,13 +634,13 @@ def main() :
 
     # hyperparameter selection for linear-SVM
     # c = 1 is the best for everything except sensitivity
-    best_params = select_param_linear(X_train, y_train, skf, metrics)
+    #best_params = select_param_linear(X_train, y_train, skf, metrics)
 
     # hyperparameter selection using RBF-SVM
     # c = 100 and gamma = 0.01 is best for everything except sensitivity
     #best_params_rbf = select_param_rbf(X_train, y_train, skf, metrics)
 
-    print(best_params)
+    #print(best_params)
     #print(best_params_rbf)
 
     # part 5a: train linear- and RBF-SVMs with selected hyperparameters
@@ -647,39 +649,42 @@ def main() :
     # Create and train baseline, linear, and rbf classifiers
     baseline = DummyClassifier()
     baseline.fit(X_train, y_train)
+    print('a')
 
     clf_linear = SVC(C=0.1, kernel='linear', class_weight = 'balanced')
     clf_linear.fit(X_train, y_train)
+    print('b')
 
-    clf_rbf = SVC(C=0.1, gamma=0.01, kernel='rbf',class_weight = 'balanced')
-    clf_rbf.fit(X_train, y_train)
+    #clf_rbf = SVC(C=0.1, gamma=0.01, kernel='rbf',class_weight = 'balanced')
+    #clf_rbf.fit(X_train, y_train)
 
-    clf_rfc = RandomForestClassifier(max_depth = 100, class_weight = 'balanced')
+    clf_rfc = RandomForestClassifier(max_depth = None, class_weight = 'balanced')
     clf_rfc.fit(X_train,y_train)
+    print('c')
 
     # part 5b: report performance on train data
     #          use plot_results(...) to make plot
-    classifiers = ["linear", "rbf", "rfc"]
+    classifiers = ["linear", "rfc"]
 
     # Predict y vals for all classifiers
     y_pred_baseline = baseline.predict(X_train)
     y_pred_linear = clf_linear.predict(X_train)
-    y_pred_rbf = clf_rbf.predict(X_train)
+    #y_pred_rbf = clf_rbf.predict(X_train)
     y_pred_rfc = clf_rfc.predict(X_train)
 
     # Keep a list of results for each metric
     results_baseline = []
     results_linear = []
-    results_rbf = []
+    #results_rbf = []
     results_rfc = []
 
     for metric in metrics:
         results_baseline += [(performance(y_train, y_pred_baseline, metric),)]
         results_linear += [(performance(y_train, y_pred_linear, metric),)]
-        results_rbf += [(performance(y_train, y_pred_rbf, metric),)]
+        #results_rbf += [(performance(y_train, y_pred_rbf, metric),)]
         results_rfc += [(performance(y_train, y_pred_rfc, metric),)]
 
-    plot_results(metrics, classifiers, results_baseline, results_linear, results_rbf, results_rfc)
+    plot_results(metrics, classifiers, results_baseline, results_linear, results_rfc)
 
     # part 5d: use bootstrapping to report performance on test data
     #          use plot_results(...) to make plot
@@ -687,16 +692,16 @@ def main() :
     # Keep a list of confidence intervals for each metric
     CIs_baseline = []
     CIs_linear = []
-    CIs_rbf = []
+    #CIs_rbf = []
     CIs_rfc = []
 
     for metric in metrics:
         CIs_baseline += [(performance_CI(baseline, X_test, y_test, metric))]
         CIs_linear += [(performance_CI(clf_linear, X_test, y_test, metric))]
-        CIs_rbf += [(performance_CI(clf_rbf, X_test, y_test, metric))]
+        #CIs_rbf += [(performance_CI(clf_rbf, X_test, y_test, metric))]
         CIs_rfc += [(performance_CI(clf_rfc, X_test, y_test, metric))]
 
-    plot_results(metrics, classifiers, CIs_baseline, CIs_linear,CIs_rbf, CIs_rfc)
+    plot_results(metrics, classifiers, CIs_baseline, CIs_linear, CIs_rfc)
 
     ### ========== TODO : START ========== ###
     # part 6: identify important features
