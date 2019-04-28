@@ -72,7 +72,7 @@ def preprocess_csv(f_name):
 
     def preprocess_row(row):
         row = row.lower()
-        row = re.sub(r'http\S+', ' LINK ', row)
+        row = re.sub(r'http\S+..\S+', r'http\S+..', row)
         row = re.sub(r'\d+', '', row)
         for char in string.punctuation:
             row = row.replace(char, '')
@@ -191,7 +191,7 @@ def main():
         comments += [line]
 
     words = find_max_TFIDF_words(comments)[0]
-    
+
 
 
 if __name__ == "__main__" :
