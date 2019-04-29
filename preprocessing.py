@@ -65,21 +65,36 @@ def subreddit_csv(subreddit, dir):
     new_csv = "%s.csv" % (subreddit)
     subreddit_df.to_csv(path_or_buf=new_csv, sep=',', encoding='utf-8')
 
-#Preprocess the csv file,
+#Preprocess the csv file
 def preprocess_csv(f_name, cols=COLUMN_TO_TYPE.keys()):
     df = pd.read_csv(f_name, dtype=COLUMN_TO_TYPE)
     df = df.dropna(subset=['body'])
     all_bodies = df['body'].copy()
 
+    #Format each feature (especially the body of the post)
     def preprocess_row(row):
         row = row.lower()
-        row = re.sub(r'www.\S+', '{uri.netloc}'.format(uri=urlparse(row)), row)
+        urls = re.findall(r'http\S+', row)
+        l = " "
+        #Avoiding invalid URLs, format each link in the body
+        try:
+            for u in urls:
+                domain = '{uri.netloc}'.format(uri=urlparse(u))
+                domain = domain.replace('.','')
+                domain = domain.replace('-','')
+                l = l + domain + " "
+        except:
+            pass
+        row = re.sub(r'http\S+', '', row)
         row = re.sub(r'\d+', '', row)
-        special_chars = ['-','/','_','.','\n','\r']
+        special_chars = ['\n','\r']
         for c in special_chars:
             row = row.replace(c, ' ')
+        # Remove unneccessary punctuation
         for char in string.punctuation:
             row = row.replace(char, '')
+        # Add the formatted URLs back on the end of the comment
+        row = row + l
         return row
 
     all_bodies = all_bodies.apply(preprocess_row)
