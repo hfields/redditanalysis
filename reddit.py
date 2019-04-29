@@ -326,15 +326,18 @@ def cv_performance(clf, X, y, kf, metrics=["accuracy"]) :
         X_train, X_test, y_train, y_test = X[train], X[test], y[train], y[test]
         clf.fit(X_train, y_train)
         # use SVC.decision_function to make ``continuous-valued'' predictions
-        y_pred = clf.decision_function(X_test)
+        a = True
+        if a:
+            y_pred = clf.predict(X_test)
+        else:
+            y_pred = clf.decision_function(X_test)
         for m, metric in enumerate(metrics) :
             score = performance(y_test, y_pred, metric)
             scores[m,k] = score
 
     return scores.mean(axis=1) # average across columns
 
-
-def select_param_linear(X, y, kf, metrics=["accuracy"], plot=True) :
+def select_param_linear_rfc(X, y, kf, metrics=["accuracy"], plot=True, linear=True) :
     """
     Sweeps different settings for the hyperparameter of a linear-kernel SVM,
     calculating the k-fold CV performance for each setting and metric,
@@ -356,6 +359,8 @@ def select_param_linear(X, y, kf, metrics=["accuracy"], plot=True) :
     """
 
     C_range = 10.0 ** np.arange(-3, 3)
+    if not linear:
+        C_range = 10.0*np.arange(1,10)
 
     scores = np.empty((len(metrics), len(C_range)))
     best_params = np.empty(len(metrics))
@@ -364,7 +369,11 @@ def select_param_linear(X, y, kf, metrics=["accuracy"], plot=True) :
     for i in range(len(C_range)):
         c = C_range[i]
         #clf = SVC(C=c,kernel='linear')
+    
         clf = LinearSVC(loss='hinge',class_weight='balanced',C=c)
+
+        if not linear:
+            clf = RandomForestClassifier(class_weight='balanced',max_depth=c)
 
         # compute CV scores using cv_performance(...)
         sc = cv_performance(clf,X,y,kf,metrics=metrics)
@@ -372,6 +381,7 @@ def select_param_linear(X, y, kf, metrics=["accuracy"], plot=True) :
         for j in range(len(sc)):
             score = sc[j]
             scores[j][i] = score
+        print(i)
 
     # get best hyperparameters
     for i in range(len(scores)):
@@ -385,6 +395,8 @@ def select_param_linear(X, y, kf, metrics=["accuracy"], plot=True) :
         ax = plt.gca()
         ax.set_ylim(0, 1)
         ax.set_xlabel("C")
+        if not linear:
+            ax.set_xlabel("max depth")
         ax.set_ylabel("score")
         for m, metric in enumerate(metrics) :
             lineplot(C_range, scores[m,:], metric)
@@ -612,34 +624,69 @@ def find_max_TFIDF_words(documents):
 
 def main() :
     # read the comments and their labels, without unit tests
+    tfidf = False
+    test_split = False
+    
     comments = []
     f = open("anacigin.txt")
 
     for line in f:
         comments += [line]
 
-    features = list(find_max_TFIDF_words(comments)[0])
+    if tfidf:
+        features = list(find_max_TFIDF_words(comments)[0])
 
-    countvectorizer = CountVectorizer(stop_words = features[1000:])
-    counts = countvectorizer.fit_transform(comments)
-    
-    transformer = TfidfTransformer()
-    X = transformer.fit_transform(counts)
+        countvectorizer = CountVectorizer(stop_words = features[1000:])
+        counts = countvectorizer.fit_transform(comments)
+        
+        transformer = TfidfTransformer()
+        X = transformer.fit_transform(counts)
+        dictionary = countvectorizer.get_feature_names()
+    elif test_split:
+        #dictionary = extract_dictionary('anacigin.txt')
+        #test_extract_dictionary(dictionary)
+        #X = extract_feature_vectors('anacigin.txt', dictionary)
+        train_size = 10043338
+        k = 50000
+        a = 10000
+        vectorizer = CountVectorizer(max_features=10000)
+        comments_train = comments[:train_size]
+        comments_test = comments[:train_size]
+        comments_train = shuffle(comments_train)
+        comments_test = shuffle(comments_test)
+        comments_train = comments_train[:k]
+        comments_test = comments_test[:a]
+ 
+        comments = comments_train+comments_test
 
-    dictionary = countvectorizer.get_feature_names()
-    y = read_vector_file('anneannen.txt')
+        X = vectorizer.fit_transform(comments)
+        print(vectorizer.get_feature_names())
+        y = read_vector_file('anneannen.txt')
+        y_train = y[:k]
+        y_test = y[:a]
+        #y = y_train+y_test
+        dictionary = vectorizer.get_feature_names()
+    else:
+        vectorizer = CountVectorizer()
+        y = read_vector_file('anneannen.txt')
+        X = vectorizer.fit_transform(comments)
+        dictionary = vectorizer.get_feature_names()
+    print('end input')
 
-    # shuffle data (since file has comments ordered by bernie)
-    X, y = shuffle(X, y)
 
     # set random seed
     #np.random.seed(1234)
 
     # split the data into training (training + cross-validation) and testing set
-    #train_size = 1000
+   
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    train_size = 50000
     #X_train, X_test = X[:train_size], X[train_size:]
     #y_train, y_test = y[:train_size], y[train_size:]
+
+    # shuffle data (since file has comments ordered by bernie)
+    X_train, y_train = shuffle(X_train, y_train)
+    X_test, y_test = shuffle(X_test, y_test)
 
     # part 2a: metrics, with unit test
     # (nothing to implement, just make sure the test passes)
@@ -649,8 +696,8 @@ def main() :
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=np.random.randint(1234))
 
     # hyperparameter selection for linear-SVM
-    #best_params = select_param_linear(X_train, y_train, skf, metrics)
-    #print(best_params)
+    best_params = select_param_linear_rfc(X_train, y_train, skf, metrics,linear= False)
+    print(best_params)
 
     # part 5a: train linear- and RBF-SVMs with selected hyperparameters
     # hint: use only linear-SVM (comment out the RBF-SVM) for debugging
@@ -661,52 +708,54 @@ def main() :
     print('a')
 
     #clf_linear = SVC(C=0.1, kernel='linear', class_weight = 'balanced')
-    clf_linear = DummyClassifier()
-    clf_linear.fit(X_train, y_train)
-    print('b')
-
-    clf_rfc = RandomForestClassifier(max_depth = 100, class_weight = 'balanced')
-    #clf_rfc = DummyClassifier()
-    clf_rfc.fit(X_train,y_train)
-    print('c')
+    #clf_linear = DummyClassifier()
+    #clf_linear.fit(X_train, y_train)
+    #print('b')
 
     clf_fast = LinearSVC(loss='hinge',class_weight='balanced',C=0.01)
     clf_fast.fit(X_train,y_train)
     print('d')
 
+    clf_rfc = RandomForestClassifier(max_depth = 20, class_weight = 'balanced')
+    #clf_rfc = DummyClassifier()
+    clf_rfc.fit(X_train,y_train)
+    print('c')
+
+
+
     # part 5b: report performance on train data
     #          use plot_results(...) to make plot
-    classifiers = ["linear", "rfc", 'fast']
+    classifiers = [ "rfc", 'linear']
 
     # Predict y vals for all classifiers
     y_pred_baseline = baseline.predict(X_train)
-    y_pred_linear = clf_linear.predict(X_train)
+    #y_pred_linear = clf_linear.predict(X_train)
     #y_pred_rbf = clf_rbf.predict(X_train)
     y_pred_rfc = clf_rfc.predict(X_train)
     y_pred_fast = clf_fast.predict(X_train)
 
     # Keep a list of results for each metric
     results_baseline = []
-    results_linear = []
+    #results_linear = []
     #results_rbf = []
     results_rfc = []
     results_fast = []
 
     for metric in metrics:
         results_baseline += [(performance(y_train, y_pred_baseline, metric),)]
-        results_linear += [(performance(y_train, y_pred_linear, metric),)]
+        #results_linear += [(performance(y_train, y_pred_linear, metric),)]
         #results_rbf += [(performance(y_train, y_pred_rbf, metric),)]
         results_rfc += [(performance(y_train, y_pred_rfc, metric),)]
         results_fast += [(performance(y_train, y_pred_fast, metric),)]
 
-    plot_results(metrics, classifiers, results_baseline, results_linear, results_rfc,results_fast)
+    plot_results(metrics, classifiers, results_baseline, results_rfc,results_fast)
 
     # part 5d: use bootstrapping to report performance on test data
     #          use plot_results(...) to make plot
 
     # Keep a list of confidence intervals for each metric
     CIs_baseline = []
-    CIs_linear = []
+    #CIs_linear = []
     #CIs_rbf = []
     CIs_rfc = []
     CIs_fast = []
@@ -714,11 +763,11 @@ def main() :
     for metric in metrics:
         print(metric)
         CIs_baseline += [(performance_CI(baseline, X_test, y_test, metric))]
-        CIs_linear += [(performance_CI(clf_linear, X_test, y_test, metric))]
+        #CIs_linear += [(performance_CI(clf_linear, X_test, y_test, metric))]
         CIs_rfc += [(performance_CI(clf_rfc, X_test, y_test, metric))]
         CIs_fast += [(performance_CI(clf_fast, X_test, y_test, metric))]
 
-    plot_results(metrics, classifiers, CIs_baseline, CIs_linear, CIs_rfc, CIs_fast)
+    plot_results(metrics, classifiers, CIs_baseline, CIs_rfc, CIs_fast)
 
     # part 6: identify important features
 
@@ -729,7 +778,8 @@ def main() :
 
     print(features[0:10])
     print(features[-11:])
-
+    print(np.sort(clf_fast.coef_)[0])
+    
 
 if __name__ == "__main__" :
     main()
