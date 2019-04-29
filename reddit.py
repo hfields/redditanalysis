@@ -370,7 +370,7 @@ def select_param_linear_rfc(X, y, kf, metrics=["accuracy"], plot=True, linear=Tr
     for i in range(len(C_range)):
         c = C_range[i]
         #clf = SVC(C=c,kernel='linear')
-    
+
         clf = LinearSVC(loss='hinge',class_weight='balanced',C=c)
 
         if not linear:
@@ -625,19 +625,25 @@ def find_max_TFIDF_words(documents):
 ######################################################################
 
 def main() :
-    
     tfidf = True
     train_size = 1000000
     test_size = 100000
     num_features = 1000
     test_split = False
 
+<<<<<<< HEAD
     # Open train set and store comments
     train_comments = []
     f = codecs.open("train.txt", "r", encoding = "utf8")
+=======
+    #features = list(find_max_TFIDF_words(comments)[0])
+>>>>>>> 2e20351aa13055041e1ea6d7fbf7440501278012
 
-    for line in f:
-        train_comments += [line]
+    countvectorizer = TfidfVectorizer(max_features = 1000)
+    counts = countvectorizer.fit_transform(comments)
+
+    transformer = TfidfTransformer()
+    X = transformer.fit_transform(counts)
 
     print("Train comments added")
 
@@ -695,7 +701,7 @@ def main() :
         comments_test = shuffle(comments_test)
         comments_train = comments_train[:k]
         comments_test = comments_test[:a]
- 
+
         comments = comments_train+comments_test
 
         X = vectorizer.fit_transform(comments)
@@ -716,7 +722,7 @@ def main() :
 
     """
     # split the data into training (training + cross-validation) and testing set
-   
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
     train_size = 50000
     #X_train, X_test = X[:train_size], X[train_size:]
@@ -806,7 +812,7 @@ def main() :
     print(features[0:10])
     print(features[-11:])
     print(np.sort(clf_fast.coef_)[0])
-    
+
 
 if __name__ == "__main__" :
     main()
