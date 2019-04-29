@@ -73,9 +73,14 @@ def preprocess_csv(f_name, cols=COLUMN_TO_TYPE.keys()):
 
     def preprocess_row(row):
         row = row.lower()
-        row = re.sub(r'www.\S+', '{uri.netloc}'.format(uri=urlparse(row)), row)
+        #Format the URL
+        domain = '{uri.netloc}'.format(uri=urlparse(row))
+        domain = domain.replace('.','')
+        domain = domain.replace('-','')
+
+        row = re.sub(r'http^(.*?)\..*', domain, row)
         row = re.sub(r'\d+', '', row)
-        special_chars = ['-','/','_','.','\n','\r']
+        special_chars = ['\n','\r','.']
         for c in special_chars:
             row = row.replace(c, ' ')
         for char in string.punctuation:
