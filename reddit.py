@@ -618,11 +618,11 @@ def main() :
     for line in f:
         comments += [line]
 
-    features = list(find_max_TFIDF_words(comments)[0])
+    #features = list(find_max_TFIDF_words(comments)[0])
 
-    countvectorizer = CountVectorizer(stop_words = features[1000:])
+    countvectorizer = TfidfVectorizer(max_features = 1000)
     counts = countvectorizer.fit_transform(comments)
-    
+
     transformer = TfidfTransformer()
     X = transformer.fit_transform(counts)
 

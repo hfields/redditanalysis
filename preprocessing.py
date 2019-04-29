@@ -65,6 +65,7 @@ def subreddit_csv(subreddit, dir):
     new_csv = "%s.csv" % (subreddit)
     subreddit_df.to_csv(path_or_buf=new_csv, sep=',', encoding='utf-8')
 
+
 #Preprocess the csv file
 def preprocess_csv(f_name, cols=COLUMN_TO_TYPE.keys()):
     df = pd.read_csv(f_name, dtype=COLUMN_TO_TYPE)
@@ -72,7 +73,16 @@ def preprocess_csv(f_name, cols=COLUMN_TO_TYPE.keys()):
     all_bodies = df['body'].copy()
 
     #Format each feature (especially the body of the post)
+
+    # UNCOMMENT FOR STOP WORDS
+    # stop_words = set(stopwords.words("english"))
     def preprocess_row(row):
+        # UNCOMMENT FOR STOP WORDS
+        # words = word_tokenize(row)
+        # return ' '.join([w for w in words if w not in stop_words \
+        #                  and w != "lt" and w != "gt"])
+
+
         row = row.lower()
         urls = re.findall(r'http\S+', row)
         l = " "
@@ -212,7 +222,8 @@ def find_max_TFIDF_words(documents):
 
 
 def main():
-    preprocess_csv("../politics_7-16.csv")
+    pass
+    # preprocess_csv("../politics_7-16.csv")
     # json_dir_to_csv('../reddit_data/2016/RC_2016-12/')
     # subreddit_csv('politics', '../reddit_data/2016/RC_2016-12/')
     # data = word_counts('./politics.csv')
