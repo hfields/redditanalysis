@@ -11,6 +11,7 @@ from os import listdir
 from os.path import isfile, join, splitext
 from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy.sparse import csr_matrix
+from urllib.parse import urlparse
 
 COLUMN_TO_TYPE = {'created_utc':np.int64,
                   'ups': np.int64,
@@ -64,7 +65,7 @@ def subreddit_csv(subreddit, dir):
     new_csv = "%s.csv" % (subreddit)
     subreddit_df.to_csv(path_or_buf=new_csv, sep=',', encoding='utf-8')
 
-
+#Preprocess the csv file,
 def preprocess_csv(f_name, cols=COLUMN_TO_TYPE.keys()):
     df = pd.read_csv(f_name, dtype=COLUMN_TO_TYPE)
     df = df.dropna(subset=['body'])
@@ -72,12 +73,13 @@ def preprocess_csv(f_name, cols=COLUMN_TO_TYPE.keys()):
 
     def preprocess_row(row):
         row = row.lower()
-        row = re.sub(r'http\S+..\S+', r'http\S+..', row)
+        row = re.sub(r'www.\S+', '{uri.netloc}'.format(uri=urlparse(row)), row)
         row = re.sub(r'\d+', '', row)
+        special_chars = ['-','/','_','.','\n','\r']
+        for c in special_chars:
+            row = row.replace(c, ' ')
         for char in string.punctuation:
             row = row.replace(char, '')
-        row = row.replace('\n', '')
-        row = row.replace('\r', '')
         return row
 
     all_bodies = all_bodies.apply(preprocess_row)
@@ -195,6 +197,7 @@ def find_max_TFIDF_words(documents):
 
 
 def main():
+    preprocess_csv("../politics_7-16.csv")
     # json_dir_to_csv('../reddit_data/2016/RC_2016-12/')
     # subreddit_csv('politics', '../reddit_data/2016/RC_2016-12/')
     # data = word_counts('./politics.csv')
@@ -209,7 +212,6 @@ def main():
     #
     # words = find_max_TFIDF_words(comments)[0]
 
-    words = find_max_TFIDF_words(comments)[0]
 
 
 
