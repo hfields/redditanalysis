@@ -40,7 +40,7 @@ def convert(f_name):
     all_bodies = df['body'].values
 
     all_cont = df['controversiality'].values
-    with open("anacigin.txt", "w") as anan:
+    with open("anacigin.txt", "w", encoding="utf-8") as anan:
         with open("anneannen.txt", "w") as labels:
             for body, cont in zip(all_bodies, all_cont):           
                 try:

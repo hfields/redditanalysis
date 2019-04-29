@@ -612,6 +612,7 @@ def find_max_TFIDF_words(documents):
 
     vectorizer = TfidfVectorizer()
     response = vectorizer.fit_transform(documents)
+    print("Fit completed for max words")
 
     dictionary = vectorizer.get_feature_names()
     averages = response.mean(axis = 0)
@@ -623,25 +624,60 @@ def find_max_TFIDF_words(documents):
 ######################################################################
 
 def main() :
-    # read the comments and their labels, without unit tests
-    tfidf = False
-    test_split = False
     
-    comments = []
-    f = open("anacigin.txt")
+    tfidf = True
+    train_size = 250000
+    test_size = 50000
+    num_features = 1000
+    test_split = False
+
+    # Open train set and store comments
+    train_comments = []
+    f = open("train.txt")
 
     for line in f:
-        comments += [line]
+        train_comments += [line]
+
+    print("Train comments added")
+
+    # Open test set and store comments
+    test_comments = []
+    f = open("test.txt")
+
+    for line in f:
+        test_comments += [line]
+
+    print("Test comments added")
+
+    # Get train and test y-vals
+    y_train = read_vector_file('y_train.txt')
+    y_test = read_vector_file('y_test.txt')
+
+    # Shuffle comments
+    train_comments, y_train = shuffle(train_comments, y_train)
+    test_comments, y_test = shuffle(test_comments, y_test)
+
+    # Truncate comments and y vals according to train/test size
+    train_comments = train_comments[:train_size]
+    test_comments = test_comments[:test_size]
+    y_train = y_train[:train_size]
+    y_test = y_test[:test_size]
 
     if tfidf:
-        features = list(find_max_TFIDF_words(comments)[0])
+        # Return a list of words sorted by average tfidf score in the training set
+        features = list(find_max_TFIDF_words(train_comments[:train_size])[0])
 
-        countvectorizer = CountVectorizer(stop_words = features[1000:])
-        counts = countvectorizer.fit_transform(comments)
+        # Using a countvectorizer and tfidf transformer, create X_train and X_test sets
+        countvectorizer = CountVectorizer(stop_words = features[num_features:])
+        train_counts = countvectorizer.fit_transform(train_comments[:train_size])
+        test_counts = countvectorizer.transform(test_comments[:test_size])
         
         transformer = TfidfTransformer()
-        X = transformer.fit_transform(counts)
+        X_train = transformer.fit_transform(train_counts)
+        X_test = transformer.transform(test_counts)
+
         dictionary = countvectorizer.get_feature_names()
+
     elif test_split:
         #dictionary = extract_dictionary('anacigin.txt')
         #test_extract_dictionary(dictionary)
@@ -666,17 +702,16 @@ def main() :
         y_test = y[:a]
         #y = y_train+y_test
         dictionary = vectorizer.get_feature_names()
+
     else:
         vectorizer = CountVectorizer()
         y = read_vector_file('anneannen.txt')
         X = vectorizer.fit_transform(comments)
         dictionary = vectorizer.get_feature_names()
+
     print('end input')
 
-
-    # set random seed
-    #np.random.seed(1234)
-
+    """
     # split the data into training (training + cross-validation) and testing set
    
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
@@ -687,6 +722,7 @@ def main() :
     # shuffle data (since file has comments ordered by bernie)
     X_train, y_train = shuffle(X_train, y_train)
     X_test, y_test = shuffle(X_test, y_test)
+    """
 
     # part 2a: metrics, with unit test
     # (nothing to implement, just make sure the test passes)
