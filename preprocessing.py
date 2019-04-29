@@ -74,17 +74,28 @@ def preprocess_csv(f_name, cols=COLUMN_TO_TYPE.keys()):
     def preprocess_row(row):
         row = row.lower()
         #Format the URL
-        domain = '{uri.netloc}'.format(uri=urlparse(row))
-        domain = domain.replace('.','')
-        domain = domain.replace('-','')
-
-        row = re.sub(r'http^(.*?)\..*', domain, row)
+        urls = re.findall(r'http\S+', row)
+        l = " "
+        try:
+            for u in urls:
+                print(row)
+                print(u)
+                domain = '{uri.netloc}'.format(uri=urlparse(u))
+                domain = domain.replace('.','')
+                domain = domain.replace('-','')
+                l = l + domain + " "
+                print(l)
+        except:
+            pass
+        row = re.sub(r'http\S+', '', row)
         row = re.sub(r'\d+', '', row)
-        special_chars = ['\n','\r','.']
+        special_chars = ['\n','\r']
         for c in special_chars:
             row = row.replace(c, ' ')
         for char in string.punctuation:
             row = row.replace(char, '')
+        row = row + l
+        print(row)
         return row
 
     all_bodies = all_bodies.apply(preprocess_row)
