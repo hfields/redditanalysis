@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import pandas as pd
+import codecs
 
 COLUMN_TO_TYPE = {'created_utc':np.int64,
                   'ups': np.int64,
@@ -28,6 +29,17 @@ COLUMN_TO_TYPE = {'created_utc':np.int64,
                   'controversiality': np.int8,
                   'parent_id': str,
                   }
+
+BLOCKSIZE = 1048576
+
+def convert_to_utf8(sourceFileName, targetFileName):
+    with codecs.open(sourceFileName, "r") as sourceFile:
+        with codecs.open(targetFileName, "w", encoding = "utf8") as targetFile:
+            while True:
+                contents = sourceFile.read(BLOCKSIZE)
+                if not contents:
+                    break
+                targetFile.write(contents)
 
 # run this function, input is the name of the csv file
 # anacigin is the comments line by line

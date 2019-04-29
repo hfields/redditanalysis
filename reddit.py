@@ -27,6 +27,7 @@ from sklearn.utils import shuffle
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer, TfidfTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
+import codecs
 
 ######################################################################
 # functions -- input/output
@@ -626,14 +627,14 @@ def find_max_TFIDF_words(documents):
 def main() :
     
     tfidf = True
-    train_size = 250000
-    test_size = 50000
+    train_size = 1000000
+    test_size = 100000
     num_features = 1000
     test_split = False
 
     # Open train set and store comments
     train_comments = []
-    f = open("train.txt")
+    f = codecs.open("train.txt", "r", encoding = "utf8")
 
     for line in f:
         train_comments += [line]
@@ -642,7 +643,7 @@ def main() :
 
     # Open test set and store comments
     test_comments = []
-    f = open("test.txt")
+    f = codecs.open("test.txt", "r", encoding = "utf8")
 
     for line in f:
         test_comments += [line]
@@ -665,18 +666,20 @@ def main() :
 
     if tfidf:
         # Return a list of words sorted by average tfidf score in the training set
-        features = list(find_max_TFIDF_words(train_comments[:train_size])[0])
+        #features = list(find_max_TFIDF_words(train_comments[:train_size])[0])
+        #print(features[:100])
 
         # Using a countvectorizer and tfidf transformer, create X_train and X_test sets
-        countvectorizer = CountVectorizer(stop_words = features[num_features:])
-        train_counts = countvectorizer.fit_transform(train_comments[:train_size])
-        test_counts = countvectorizer.transform(test_comments[:test_size])
+        #countvectorizer = CountVectorizer(stop_words = features[num_features:])
+        #train_counts = countvectorizer.fit_transform(train_comments[:train_size])
+        #test_counts = countvectorizer.transform(test_comments[:test_size])
         
-        transformer = TfidfTransformer()
-        X_train = transformer.fit_transform(train_counts)
-        X_test = transformer.transform(test_counts)
+        vectorizer = TfidfVectorizer(max_features = num_features)
+        X_train = vectorizer.fit_transform(train_comments)
+        X_test = vectorizer.transform(test_comments)
 
-        dictionary = countvectorizer.get_feature_names()
+        dictionary = vectorizer.get_feature_names()
+        print(len(dictionary))
 
     elif test_split:
         #dictionary = extract_dictionary('anacigin.txt')
@@ -732,8 +735,11 @@ def main() :
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=np.random.randint(1234))
 
     # hyperparameter selection for linear-SVM
-    best_params = select_param_linear_rfc(X_train, y_train, skf, metrics,linear= False)
-    print(best_params)
+    #best_params = select_param_linear_rfc(X_train, y_train, skf, metrics,linear= False)
+    #print(best_params)
+    
+    #best_params = select_param_linear_rfc(X_train, y_train, skf, metrics,linear= True)
+    #print(best_params)
 
     # part 5a: train linear- and RBF-SVMs with selected hyperparameters
     # hint: use only linear-SVM (comment out the RBF-SVM) for debugging
@@ -743,21 +749,14 @@ def main() :
     baseline.fit(X_train, y_train)
     print('a')
 
-    #clf_linear = SVC(C=0.1, kernel='linear', class_weight = 'balanced')
-    #clf_linear = DummyClassifier()
-    #clf_linear.fit(X_train, y_train)
-    #print('b')
-
     clf_fast = LinearSVC(loss='hinge',class_weight='balanced',C=0.01)
     clf_fast.fit(X_train,y_train)
-    print('d')
+    print('b')
 
-    clf_rfc = RandomForestClassifier(max_depth = 20, class_weight = 'balanced')
+    clf_rfc = RandomForestClassifier(max_depth = 30, class_weight = 'balanced')
     #clf_rfc = DummyClassifier()
     clf_rfc.fit(X_train,y_train)
     print('c')
-
-
 
     # part 5b: report performance on train data
     #          use plot_results(...) to make plot
@@ -765,22 +764,16 @@ def main() :
 
     # Predict y vals for all classifiers
     y_pred_baseline = baseline.predict(X_train)
-    #y_pred_linear = clf_linear.predict(X_train)
-    #y_pred_rbf = clf_rbf.predict(X_train)
     y_pred_rfc = clf_rfc.predict(X_train)
     y_pred_fast = clf_fast.predict(X_train)
 
     # Keep a list of results for each metric
     results_baseline = []
-    #results_linear = []
-    #results_rbf = []
     results_rfc = []
     results_fast = []
 
     for metric in metrics:
         results_baseline += [(performance(y_train, y_pred_baseline, metric),)]
-        #results_linear += [(performance(y_train, y_pred_linear, metric),)]
-        #results_rbf += [(performance(y_train, y_pred_rbf, metric),)]
         results_rfc += [(performance(y_train, y_pred_rfc, metric),)]
         results_fast += [(performance(y_train, y_pred_fast, metric),)]
 
@@ -791,8 +784,6 @@ def main() :
 
     # Keep a list of confidence intervals for each metric
     CIs_baseline = []
-    #CIs_linear = []
-    #CIs_rbf = []
     CIs_rfc = []
     CIs_fast = []
 
