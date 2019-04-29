@@ -369,11 +369,7 @@ def select_param_linear_rfc(X, y, kf, metrics=["accuracy"], plot=True, linear=Tr
     for i in range(len(C_range)):
         c = C_range[i]
         #clf = SVC(C=c,kernel='linear')
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> d911f8bf5e2cff0906c4d0f72d1eb4dccd0b7009
         clf = LinearSVC(loss='hinge',class_weight='balanced',C=c)
 
         if not linear:
@@ -628,18 +624,12 @@ def find_max_TFIDF_words(documents):
 ######################################################################
 
 def main() :
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> d911f8bf5e2cff0906c4d0f72d1eb4dccd0b7009
     tfidf = True
     train_size = 250000
     test_size = 50000
     num_features = 1000
     test_split = False
 
-<<<<<<< HEAD
     #features = list(find_max_TFIDF_words(comments)[0])
 
     countvectorizer = TfidfVectorizer(max_features = 1000)
@@ -647,14 +637,6 @@ def main() :
 
     transformer = TfidfTransformer()
     X = transformer.fit_transform(counts)
-=======
-    # Open train set and store comments
-    train_comments = []
-    f = open("train.txt")
-
-    for line in f:
-        train_comments += [line]
->>>>>>> d911f8bf5e2cff0906c4d0f72d1eb4dccd0b7009
 
     print("Train comments added")
 
@@ -689,11 +671,7 @@ def main() :
         countvectorizer = CountVectorizer(stop_words = features[num_features:])
         train_counts = countvectorizer.fit_transform(train_comments[:train_size])
         test_counts = countvectorizer.transform(test_comments[:test_size])
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> d911f8bf5e2cff0906c4d0f72d1eb4dccd0b7009
         transformer = TfidfTransformer()
         X_train = transformer.fit_transform(train_counts)
         X_test = transformer.transform(test_counts)
@@ -714,11 +692,7 @@ def main() :
         comments_test = shuffle(comments_test)
         comments_train = comments_train[:k]
         comments_test = comments_test[:a]
-<<<<<<< HEAD
 
-=======
- 
->>>>>>> d911f8bf5e2cff0906c4d0f72d1eb4dccd0b7009
         comments = comments_train+comments_test
 
         X = vectorizer.fit_transform(comments)
@@ -739,11 +713,7 @@ def main() :
 
     """
     # split the data into training (training + cross-validation) and testing set
-<<<<<<< HEAD
 
-=======
-   
->>>>>>> d911f8bf5e2cff0906c4d0f72d1eb4dccd0b7009
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
     train_size = 50000
     #X_train, X_test = X[:train_size], X[train_size:]
@@ -845,11 +815,7 @@ def main() :
     print(features[0:10])
     print(features[-11:])
     print(np.sort(clf_fast.coef_)[0])
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> d911f8bf5e2cff0906c4d0f72d1eb4dccd0b7009
 
 if __name__ == "__main__" :
     main()
